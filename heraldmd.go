@@ -251,6 +251,10 @@ func (r *walker) renderFencedCodeBlock(n *ast.FencedCodeBlock) string {
 // herald's NestUL/NestOL with ListItem trees. Otherwise it falls back to
 // the flat UL/OL for simpler output.
 func (r *walker) renderList(n *ast.List) string {
+	if r.isTaskList(n) {
+		return r.renderTaskList(n)
+	}
+
 	if r.listHasNesting(n) {
 		items := r.buildListItems(n)
 		if n.IsOrdered() {
@@ -269,6 +273,31 @@ func (r *walker) renderList(n *ast.List) string {
 		return r.ty.OL(items...)
 	}
 	return r.ty.UL(items...)
+}
+
+// isTaskList returns true if the first list item starts with a TaskCheckBox.
+func (r *walker) isTaskList(n *ast.List) bool {
+	first := n.FirstChild()
+	if first == nil {
+		return false
+	}
+	para := first.FirstChild()
+	if para == nil {
+		return false
+	}
+	_, ok := para.FirstChild().(*east.TaskCheckBox)
+	return ok
+}
+
+// renderTaskList renders a task list as plain lines without bullet markers.
+func (r *walker) renderTaskList(n *ast.List) string {
+	var lines []string
+	for child := n.FirstChild(); child != nil; child = child.NextSibling() {
+		if _, ok := child.(*ast.ListItem); ok {
+			lines = append(lines, r.renderListItemText(child))
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 // listHasNesting returns true if any list item contains a nested list.
@@ -445,6 +474,11 @@ func (r *walker) renderInline(node ast.Node) string {
 		return r.ty.FootnoteRef(n.Index)
 	case *east.FootnoteBacklink:
 		return "" // terminal can't link back to the reference
+	case *east.TaskCheckBox:
+		if n.IsChecked {
+			return "[x] "
+		}
+		return "[ ] "
 	default:
 		if node.HasChildren() {
 			return r.renderInlineChildren(node)

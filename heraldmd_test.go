@@ -164,6 +164,23 @@ func TestRenderOrderedList(t *testing.T) {
 	}
 }
 
+func TestRenderTaskList(t *testing.T) {
+	ty := newTestTypography()
+	md := "- [x] Completed task\n- [ ] Pending task"
+	result := stripANSI(Render(ty, []byte(md)))
+
+	if !strings.Contains(result, "[x] Completed task") {
+		t.Errorf("missing checked task item in:\n%s", result)
+	}
+	if !strings.Contains(result, "[ ] Pending task") {
+		t.Errorf("missing unchecked task item in:\n%s", result)
+	}
+	// Task lists should not have bullet markers.
+	if strings.Contains(result, "•") {
+		t.Errorf("task list should not have bullet markers:\n%s", result)
+	}
+}
+
 func TestRenderTable(t *testing.T) {
 	ty := newTestTypography()
 	md := "| Name | Role |\n| --- | --- |\n| Alice | Admin |"
@@ -753,6 +770,25 @@ func TestBuildListItemsSkipsNonListItem(t *testing.T) {
 	items := r.buildListItems(list)
 	if len(items) != 0 {
 		t.Errorf("buildListItems should skip non-ListItem children, got %d items", len(items))
+	}
+}
+
+func TestIsTaskListEdgeCases(t *testing.T) {
+	ty := newTestTypography()
+	r := &walker{ty: ty, source: []byte{}}
+
+	// Empty list.
+	emptyList := ast.NewList('-')
+	if r.isTaskList(emptyList) {
+		t.Error("empty list should not be a task list")
+	}
+
+	// List item with no children.
+	list := ast.NewList('-')
+	li := ast.NewListItem(0)
+	list.AppendChild(list, li)
+	if r.isTaskList(list) {
+		t.Error("list item with no children should not be a task list")
 	}
 }
 

@@ -34,6 +34,13 @@ fmt.Println(heraldmd.Render(ty, source))
 | Code      | `` `code` `` | `Code()`        |
 | List      | `- item`     | `UL()` / `OL()` |
 
+## Task List
+
+- [x] CommonMark parsing
+- [x] GFM extensions
+- [ ] Custom theme support
+- [ ] Plugin system
+
 ## Alerts
 
 > [!NOTE]
