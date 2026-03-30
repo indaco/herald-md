@@ -59,54 +59,7 @@ linters:
     rules:
       - path: _test\.go
         text: should have comment
-      # Test files: allow exec.Command without context
-      - path: _test\.go
-        linters:
-          - noctx
-      # Test files: allow less strict file permissions
-      - path: _test\.go
-        linters:
-          - gosec
-        text: "G306"
-      # Test files: allow subprocess with variables (for mocking)
-      - path: _test\.go
-        linters:
-          - gosec
-        text: "G204"
-      # Test files: allow error pointer comparison for Unwrap tests
-      - path: _test\.go
-        linters:
-          - errorlint
-        text: "comparing with != will fail"
-      # Test files: string to byte comparison is fine
-      - path: _test\.go
-        linters:
-          - gocritic
-        text: "stringXbytes"
-      # Test files: allow hardcoded octal permissions for testing edge cases
-      - path: _test\.go
-        linters:
-          - gocritic
-        text: "octalLiteral"
-      # Prealloc is often too noisy for small slices
-      - path: \.go$
-        linters:
-          - prealloc
-      - path: internal/parser/
-        linters:
-          - revive
-        text: "avoid package names that conflict"
-      - path: internal/printer/
-        linters:
-          - revive
-        text: "avoid package names that conflict"
-      - path: internal/version/
-        linters:
-          - revive
-        text: "avoid package names that conflict"
     paths:
-      - third_party$
-      - builtin$
       - examples$
 formatters:
   enable:
@@ -115,8 +68,6 @@ formatters:
   exclusions:
     generated: lax
     paths:
-      - third_party$
-      - builtin$
       - examples$
 output:
   formats:
