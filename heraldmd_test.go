@@ -518,13 +518,123 @@ func TestRenderRawHTML(t *testing.T) {
 		}
 	})
 
-	t.Run("inline html tag", func(t *testing.T) {
+	t.Run("inline html tag mapped", func(t *testing.T) {
 		md := "Some <em>emphasis</em> here"
 		result := stripANSI(Render(ty, []byte(md)))
-		if !strings.Contains(result, "<em>") {
-			t.Errorf("missing inline HTML tag in %q", result)
+		if !strings.Contains(result, "emphasis") {
+			t.Errorf("missing mapped HTML tag content in %q", result)
+		}
+		// <em> should be rendered via herald, not passed through as raw HTML.
+		if strings.Contains(result, "<em>") {
+			t.Errorf("raw <em> should be mapped to herald Italic, got %q", result)
 		}
 	})
+}
+
+func TestRenderInlineHTMLTags(t *testing.T) {
+	ty := newTestTypography()
+
+	tests := []struct {
+		name     string
+		md       string
+		contains string
+		absent   string // should NOT appear in output
+	}{
+		{"q", "Text with <q>quoted</q> here", "quoted", "<q>"},
+		{"cite", "See <cite>The Go Book</cite>", "The Go Book", "<cite>"},
+		{"samp", "Output: <samp>hello</samp>", "hello", "<samp>"},
+		{"var", "Set <var>PORT</var> value", "PORT", "<var>"},
+		{"kbd", "Press <kbd>Ctrl</kbd>", "Ctrl", "<kbd>"},
+		{"mark", "This is <mark>highlighted</mark>", "highlighted", "<mark>"},
+		{"ins", "Text <ins>added</ins>", "added", "<ins>"},
+		{"del", "Text <del>removed</del>", "removed", "<del>"},
+		{"sub", "H<sub>2</sub>O", "2", "<sub>"},
+		{"sup", "x<sup>2</sup>", "2", "<sup>"},
+		{"b", "Some <b>bold</b> text", "bold", "<b>"},
+		{"i", "Some <i>italic</i> text", "italic", "<i>"},
+		{"u", "Some <u>underlined</u> text", "underlined", "<u>"},
+		{"s", "Some <s>struck</s> text", "struck", "<s>"},
+		{"strong", "Some <strong>strong</strong> text", "strong", "<strong>"},
+		{"small", "Some <small>small</small> text", "small", "<small>"},
+		{"code", "Run <code>go build</code>", "go build", "<code>"},
+		{"abbr", "Use <abbr>CSS</abbr> styles", "CSS", "<abbr>"},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := stripANSI(Render(ty, []byte(tc.md)))
+			if !strings.Contains(result, tc.contains) {
+				t.Errorf("missing %q in:\n%s", tc.contains, result)
+			}
+			if strings.Contains(result, tc.absent) {
+				t.Errorf("raw tag %q should not appear in:\n%s", tc.absent, result)
+			}
+		})
+	}
+}
+
+func TestRenderUnknownHTMLTag(t *testing.T) {
+	ty := newTestTypography()
+	md := "Text with <span>content</span> here"
+	result := stripANSI(Render(ty, []byte(md)))
+	// Unknown tags should pass through as raw HTML.
+	if !strings.Contains(result, "<span>") {
+		t.Errorf("unknown HTML tag should pass through, got:\n%s", result)
+	}
+}
+
+func TestRenderNestedHTMLContent(t *testing.T) {
+	ty := newTestTypography()
+	md := "Text <q>quoted with **bold**</q> end"
+	result := stripANSI(Render(ty, []byte(md)))
+	if !strings.Contains(result, "quoted with") {
+		t.Errorf("missing nested HTML content in:\n%s", result)
+	}
+}
+
+func TestParseOpenTag(t *testing.T) {
+	tests := []struct {
+		input string
+		tag   string
+		ok    bool
+	}{
+		{"<q>", "q", true},
+		{"<cite>", "cite", true},
+		{"<SAMP>", "samp", true},
+		{"</q>", "", false},
+		{"<>", "", false},
+		{"text", "", false},
+		{"<abbr title=\"x\">", "abbr", true},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.input, func(t *testing.T) {
+			tag, ok := parseOpenTag(tc.input)
+			if ok != tc.ok || tag != tc.tag {
+				t.Errorf("parseOpenTag(%q) = (%q, %v), want (%q, %v)", tc.input, tag, ok, tc.tag, tc.ok)
+			}
+		})
+	}
+}
+
+func TestRenderHTMLTagWithNestedRawHTML(t *testing.T) {
+	ty := newTestTypography()
+	// <q> containing a <br> (unknown raw HTML inside a known tag).
+	md := "Text <q>line one<br>line two</q> end"
+	result := stripANSI(Render(ty, []byte(md)))
+	if !strings.Contains(result, "line one") || !strings.Contains(result, "line two") {
+		t.Errorf("missing content with nested raw HTML in:\n%s", result)
+	}
+}
+
+func TestCollectHTMLTagContentUnclosed(t *testing.T) {
+	ty := newTestTypography()
+	md := "Text <q>unclosed quote"
+	result := stripANSI(Render(ty, []byte(md)))
+	// Should still render the content even without closing tag.
+	if !strings.Contains(result, "unclosed quote") {
+		t.Errorf("unclosed tag content missing in:\n%s", result)
+	}
 }
 
 func TestRenderHTMLBlock(t *testing.T) {

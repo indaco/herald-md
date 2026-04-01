@@ -86,31 +86,45 @@ func main() {
 
 ## Supported elements
 
-| Element             | Markdown syntax      | Herald method                                     |
-| ------------------- | -------------------- | ------------------------------------------------- |
-| Headings H1–H6      | `# H1` … `###### H6` | `H1()` – `H6()`                                   |
-| Paragraph           | plain text           | `P()`                                             |
-| Blockquote          | `> text`             | `Blockquote()`                                    |
-| Fenced code block   | ` ```lang `          | `CodeBlock(code, lang)`                           |
-| Indented code block | 4-space indent       | `CodeBlock(code)`                                 |
-| Horizontal rule     | `---`                | `HR()`                                            |
-| Unordered list      | `- item`             | `UL()` / `NestUL()`                               |
-| Ordered list        | `1. item`            | `OL()` / `NestOL()`                               |
-| Bold                | `**text**`           | `Bold()`                                          |
-| Italic              | `*text*`             | `Italic()`                                        |
-| Strikethrough       | `~~text~~`           | `Strikethrough()`                                 |
-| Inline code         | `` `code` ``         | `Code()`                                          |
-| Link                | `[label](url)`       | `Link(label, url)`                                |
-| Autolink            | `<https://...>`      | `Link(url)`                                       |
-| Image               | `![alt](url)`        | `Link(alt, url)` (terminals cannot render images) |
-| GFM table           | pipe table syntax    | `Table()` / `TableWithOpts()`                     |
-| GitHub alert        | `> [!NOTE]` etc.     | `Alert()` / `Note()` / `Tip()` etc.               |
-| Definition list \*  | `Term` + `:  desc`   | `DL()`                                            |
-| Footnote ref \*     | `[^1]`               | `FootnoteRef()`                                   |
-| Footnote section \* | `[^1]: text`         | `FootnoteSection()`                               |
+| Element             | Markdown syntax       | Herald method                                     |
+| ------------------- | --------------------- | ------------------------------------------------- |
+| Headings H1–H6      | `# H1` … `###### H6`  | `H1()` – `H6()`                                   |
+| Paragraph           | plain text            | `P()`                                             |
+| Blockquote          | `> text`              | `Blockquote()`                                    |
+| Fenced code block   | ` ```lang `           | `CodeBlock(code, lang)`                           |
+| Indented code block | 4-space indent        | `CodeBlock(code)`                                 |
+| Horizontal rule     | `---`                 | `HR()`                                            |
+| Unordered list      | `- item`              | `UL()` / `NestUL()`                               |
+| Ordered list        | `1. item`             | `OL()` / `NestOL()`                               |
+| Bold                | `**text**`            | `Bold()`                                          |
+| Italic              | `*text*`              | `Italic()`                                        |
+| Strikethrough       | `~~text~~`            | `Strikethrough()`                                 |
+| Inline code         | `` `code` ``          | `Code()`                                          |
+| Link                | `[label](url)`        | `Link(label, url)`                                |
+| Autolink            | `<https://...>`       | `Link(url)`                                       |
+| Image               | `![alt](url)`         | `Link(alt, url)` (terminals cannot render images) |
+| GFM table           | pipe table syntax     | `Table()` / `TableWithOpts()`                     |
+| GitHub alert        | `> [!NOTE]` etc.      | `Alert()` / `Note()` / `Tip()` etc.               |
+| Definition list \*  | `Term` + `:  desc`    | `DL()`                                            |
+| Footnote ref \*     | `[^1]`                | `FootnoteRef()`                                   |
+| Footnote section \* | `[^1]: text`          | `FootnoteSection()`                               |
+| Inline quotation    | `<q>text</q>`         | `Q()`                                             |
+| Citation            | `<cite>text</cite>`   | `Cite()`                                          |
+| Sample output       | `<samp>text</samp>`   | `Samp()`                                          |
+| Variable            | `<var>text</var>`     | `Var()`                                           |
+| Keyboard key        | `<kbd>text</kbd>`     | `Kbd()`                                           |
+| Highlight           | `<mark>text</mark>`   | `Mark()`                                          |
+| Inserted text       | `<ins>text</ins>`     | `Ins()`                                           |
+| Deleted text        | `<del>text</del>`     | `Del()`                                           |
+| Subscript           | `<sub>text</sub>`     | `Sub()`                                           |
+| Superscript         | `<sup>text</sup>`     | `Sup()`                                           |
+| Abbreviation        | `<abbr>text</abbr>`   | `Abbr()`                                          |
+| Underline           | `<u>text</u>`         | `Underline()`                                     |
+| Small text          | `<small>text</small>` | `Small()`                                         |
 
 Elements marked with **\*** require enabling the corresponding goldmark extension via `NewRenderer`. All other elements work out of the box with the default GFM configuration.
 
+- Inline HTML tags (`<q>`, `<cite>`, `<samp>`, `<var>`, `<kbd>`, `<mark>`, `<ins>`, `<del>`, `<sub>`, `<sup>`, `<abbr>`, `<u>`, `<small>`, `<b>`, `<i>`, `<s>`, `<em>`, `<strong>`, `<code>`) are mapped to the corresponding herald method. Unknown HTML tags pass through as raw text.
 - Nested lists are automatically rendered with `NestUL`/`NestOL` when sub-lists are detected, falling back to flat `UL`/`OL` for simple lists.
 - Column alignment specified in GFM tables (`:-`, `:-:`, `-:`) is preserved via `WithColumnAlign`.
 

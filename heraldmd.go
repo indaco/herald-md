@@ -439,14 +439,90 @@ func (r *walker) renderTableRow(node ast.Node) []string {
 // Inline elements
 // ---------------------------------------------------------------------------
 
+// htmlTagStyles maps HTML tag names to herald inline methods.
+var htmlTagStyles = map[string]func(*walker, string) string{
+	"q":      func(w *walker, s string) string { return w.ty.Q(s) },
+	"cite":   func(w *walker, s string) string { return w.ty.Cite(s) },
+	"samp":   func(w *walker, s string) string { return w.ty.Samp(s) },
+	"var":    func(w *walker, s string) string { return w.ty.Var(s) },
+	"kbd":    func(w *walker, s string) string { return w.ty.Kbd(s) },
+	"mark":   func(w *walker, s string) string { return w.ty.Mark(s) },
+	"ins":    func(w *walker, s string) string { return w.ty.Ins(s) },
+	"del":    func(w *walker, s string) string { return w.ty.Del(s) },
+	"sub":    func(w *walker, s string) string { return w.ty.Sub(s) },
+	"sup":    func(w *walker, s string) string { return w.ty.Sup(s) },
+	"abbr":   func(w *walker, s string) string { return w.ty.Abbr(s) },
+	"b":      func(w *walker, s string) string { return w.ty.Bold(s) },
+	"i":      func(w *walker, s string) string { return w.ty.Italic(s) },
+	"u":      func(w *walker, s string) string { return w.ty.Underline(s) },
+	"s":      func(w *walker, s string) string { return w.ty.Strikethrough(s) },
+	"em":     func(w *walker, s string) string { return w.ty.Italic(s) },
+	"strong": func(w *walker, s string) string { return w.ty.Bold(s) },
+	"small":  func(w *walker, s string) string { return w.ty.Small(s) },
+	"code":   func(w *walker, s string) string { return w.ty.Code(s) },
+}
+
+// parseOpenTag extracts the tag name from an opening HTML tag like "<q>" or
+// "<abbr>". Returns the tag name and true, or "" and false if not an opening tag.
+func parseOpenTag(raw string) (string, bool) {
+	if len(raw) < 3 || raw[0] != '<' || raw[1] == '/' || raw[len(raw)-1] != '>' {
+		return "", false
+	}
+	tag := raw[1 : len(raw)-1]
+	// Handle tags with attributes: <abbr title="...">.
+	if i := strings.IndexByte(tag, ' '); i > 0 {
+		tag = tag[:i]
+	}
+	return strings.ToLower(tag), true
+}
+
 // renderInlineChildren walks inline children of a node and concatenates
-// their styled text.
+// their styled text. When an opening HTML tag for a known element (e.g.
+// <q>, <cite>, <samp>, <var>) is encountered, the content between the
+// opening and closing tags is collected and rendered via the corresponding
+// herald method.
 func (r *walker) renderInlineChildren(node ast.Node) string {
 	var sb strings.Builder
-	for child := node.FirstChild(); child != nil; child = child.NextSibling() {
+	child := node.FirstChild()
+	for child != nil {
+		rh, isRaw := child.(*ast.RawHTML)
+		if isRaw {
+			raw := r.collectSegments(rh)
+			if tag, ok := parseOpenTag(raw); ok {
+				if styleFn, known := htmlTagStyles[tag]; known {
+					content, next := r.collectHTMLTagContent(child.NextSibling(), tag)
+					sb.WriteString(styleFn(r, content))
+					child = next
+					continue
+				}
+			}
+		}
 		sb.WriteString(r.renderInline(child))
+		child = child.NextSibling()
 	}
 	return sb.String()
+}
+
+// collectHTMLTagContent collects inline content after an opening HTML tag
+// until the matching closing tag is found. Returns the collected text and
+// the node after the closing tag (to resume iteration).
+func (r *walker) collectHTMLTagContent(start ast.Node, tag string) (string, ast.Node) {
+	closeTag := "</" + tag + ">"
+	var content strings.Builder
+	node := start
+	for node != nil {
+		if rh, ok := node.(*ast.RawHTML); ok {
+			raw := r.collectSegments(rh)
+			if strings.EqualFold(raw, closeTag) {
+				return content.String(), node.NextSibling()
+			}
+			content.WriteString(raw)
+		} else {
+			content.WriteString(r.renderInline(node))
+		}
+		node = node.NextSibling()
+	}
+	return content.String(), nil
 }
 
 // renderInline dispatches an inline node to its herald equivalent.
