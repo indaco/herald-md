@@ -41,6 +41,18 @@ fmt.Println(heraldmd.Render(ty, source))
 - [ ] Custom theme support
 - [ ] Plugin system
 
+## Inline HTML Elements
+
+As <cite>The Go Programming Language</cite> notes, <q>simplicity is the key to good software</q>.
+
+Set the <var>PORT</var> environment variable, then check the output: <samp>listening on :8080</samp>.
+
+Press <kbd>Ctrl</kbd> + <kbd>C</kbd> to stop the server. This is <mark>important</mark>.
+
+Use <abbr>CSS</abbr> for styling, <small>though terminal support varies</small>.
+
+Text can be <ins>inserted</ins> or <del>removed</del>, and even rendered as <sub>subscript</sub> or <sup>superscript</sup>.
+
 ## Alerts
 
 > [!NOTE]
