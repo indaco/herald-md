@@ -3,7 +3,7 @@ module github.com/indaco/herald-md
 go 1.25.0
 
 require (
-	github.com/indaco/herald v0.11.0
+	github.com/indaco/herald v0.13.0
 	github.com/yuin/goldmark v1.8.2
 )
 

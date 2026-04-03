@@ -510,11 +510,25 @@ func TestRenderLinkSameAsURL(t *testing.T) {
 func TestRenderRawHTML(t *testing.T) {
 	ty := newTestTypography()
 
-	t.Run("inline raw HTML", func(t *testing.T) {
+	t.Run("br tag rendered as line break", func(t *testing.T) {
 		md := "Text with <br> break"
 		result := stripANSI(Render(ty, []byte(md)))
-		if !strings.Contains(result, "<br>") {
-			t.Errorf("missing inline raw HTML in %q", result)
+		if strings.Contains(result, "<br>") {
+			t.Errorf("<br> should be mapped to herald BR, got %q", result)
+		}
+		if !strings.Contains(result, "Text with") || !strings.Contains(result, "break") {
+			t.Errorf("missing text around <br> in %q", result)
+		}
+	})
+
+	t.Run("br self-closing tag rendered as line break", func(t *testing.T) {
+		md := "Line one<br/>Line two"
+		result := stripANSI(Render(ty, []byte(md)))
+		if strings.Contains(result, "<br/>") {
+			t.Errorf("<br/> should be mapped to herald BR, got %q", result)
+		}
+		if !strings.Contains(result, "Line one") || !strings.Contains(result, "Line two") {
+			t.Errorf("missing text around <br/> in %q", result)
 		}
 	})
 

@@ -469,11 +469,18 @@ func parseOpenTag(raw string) (string, bool) {
 		return "", false
 	}
 	tag := raw[1 : len(raw)-1]
+	// Handle self-closing tags: <br/>, <hr/>.
+	tag = strings.TrimSuffix(tag, "/")
 	// Handle tags with attributes: <abbr title="...">.
 	if i := strings.IndexByte(tag, ' '); i > 0 {
 		tag = tag[:i]
 	}
 	return strings.ToLower(tag), true
+}
+
+// voidTags lists HTML void elements that have no closing tag and no content.
+var voidTags = map[string]func(*walker) string{
+	"br": func(w *walker) string { return w.ty.BR() },
 }
 
 // renderInlineChildren walks inline children of a node and concatenates
@@ -489,6 +496,12 @@ func (r *walker) renderInlineChildren(node ast.Node) string {
 		if isRaw {
 			raw := r.collectSegments(rh)
 			if tag, ok := parseOpenTag(raw); ok {
+				// Handle void (self-closing) elements like <br>.
+				if voidFn, isVoid := voidTags[tag]; isVoid {
+					sb.WriteString(voidFn(r))
+					child = child.NextSibling()
+					continue
+				}
 				if styleFn, known := htmlTagStyles[tag]; known {
 					content, next := r.collectHTMLTagContent(child.NextSibling(), tag)
 					sb.WriteString(styleFn(r, content))
